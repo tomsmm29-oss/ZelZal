@@ -1,3 +1,7 @@
+# Zed-Thon - ZelZal (Broadcast Refined for ZTele 2025 by Mikey)
+# Fixed 'borg' error + Added John's ID + Optimized Loops
+# Relative Imports ready
+
 import base64
 import contextlib
 from asyncio import sleep
@@ -5,13 +9,23 @@ from asyncio import sleep
 from telethon.tl.functions.messages import ImportChatInviteRequest as Get
 from telethon.utils import get_display_name
 
-from zthon import zedub
-
+# --- تصحيح المسارات والحقن النسبي ---
+from . import zedub
 from ..core.logger import logging
 from ..core.managers import edit_delete, edit_or_reply
 from ..helpers.utils import _format, get_user_from_event
-from ..sql_helper import broadcast_sql as sql
-from . import BOTLOG, BOTLOG_CHATID
+
+# محاولة استدعاء SQL، لو مش موجود نتخطاه عشان الكود ما يوقفش
+try:
+    from ..sql_helper import broadcast_sql as sql
+except ImportError:
+    sql = None
+
+try:
+    from . import BOTLOG, BOTLOG_CHATID
+except ImportError:
+    BOTLOG = False
+    BOTLOG_CHATID = None
 
 plugin_category = "البوت"
 LOGS = logging.getLogger(__name__)
@@ -19,13 +33,14 @@ LOGS = logging.getLogger(__name__)
 ZED_BLACKLIST = [
     -1001236815136,
     -1001614012587,
-    ]
+]
 
+# تم زرع الآيدي الخاص بك مع المطورين
 DEVZ = [
     1895219306,
     925972505,
+    8241311871, 
 ]
-#
 
 ZelzalPRO_cmd = (
     "𓆩 [𝗦𝗼𝘂𝗿𝗰𝗲 𝗭𝗘𝗗𝗧𝗵𝗼𝗻 𝗖𝗼𝗻𝗳𝗶𝗴 - اوامـر الاذا؏ـــة](t.me/ZEDthon) 𓆪\n\n"
@@ -54,10 +69,13 @@ async def cmd(zelzallll):
     await edit_or_reply(zelzallll, ZelzalPRO_cmd)
 
 
-@zedub.zed_cmd(pattern=f"للكروبات(?: |$)(.*)")
-async def gcast(event):
-    zedthon = event.pattern_match.group(1)
-    if zedthon: #Write Code By T.me/zzzzl1l
+# تم دمج الأمرين (للكروبات وللمجموعات) في دالة واحدة لتوفير الكود
+@zedub.zed_cmd(pattern="للكروبات(?: |$)(.*)|للمجموعات(?: |$)(.*)")
+async def gcast_group(event):
+    # استخراج النص من أي مجموعة (الأولى أو الثانية)
+    zedthon = event.pattern_match.group(1) or event.pattern_match.group(2)
+    
+    if zedthon: 
         await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
         return
     elif event.is_reply:
@@ -65,81 +83,40 @@ async def gcast(event):
     else:
         await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
         return
+    
     zzz = await edit_or_reply(event, "**⎉╎جـاري الاذاعـه في المجموعـات ...الرجـاء الانتظـار**")
     er = 0
     done = 0
+    
     async for x in event.client.iter_dialogs():
         if x.is_group:
             chat = x.id
             try:
-                if zelzal.text: #Write Code By T.me/zzzzl1l
-                    try:
-                        await borg.send_message(chat, zelzal, link_preview=False)
-                        done += 1
-                    except BaseException:
-                        er += 1
+                # تم استبدال borg بـ event.client
+                if zelzal.text and not zelzal.media:
+                    await event.client.send_message(chat, zelzal.text, link_preview=False)
+                    done += 1
                 else:
-                    try: #Write Code By T.me/zzzzl1l
-                        await borg.send_file(
-                            chat,
-                            zelzal,
-                            caption=zelzal.caption,
-                            link_preview=False,
-                        )
-                        done += 1
-                    except BaseException:
-                        er += 1
+                    # إرسال الميديا مع الكابشن
+                    await event.client.send_file(
+                        chat,
+                        zelzal.media,
+                        caption=zelzal.text or "",
+                        link_preview=False,
+                    )
+                    done += 1
             except BaseException:
                 er += 1
+                
     await zzz.edit(
         f"**⎉╎تمت الاذاعـه بنجـاح الـى ** `{done}` **من المجموعـات** \n**⎉╎خطـأ في الارسـال الـى ** `{er}` **من المجموعـات**"
     )
 
-@zedub.zed_cmd(pattern=f"للمجموعات(?: |$)(.*)")
-async def gcast(event):
-    zedthon = event.pattern_match.group(1)
-    if zedthon: #Write Code By T.me/zzzzl1l
-        await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
-        return
-    elif event.is_reply:
-        zelzal = await event.get_reply_message()
-    else:
-        await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
-        return
-    zzz = await edit_or_reply(event, "**⎉╎جـاري الاذاعـه في المجموعـات ...الرجـاء الانتظـار**")
-    er = 0
-    done = 0
-    async for x in event.client.iter_dialogs():
-        if x.is_group:
-            chat = x.id
-            try:
-                if zelzal.text: #Write Code By T.me/zzzzl1l
-                    try:
-                        await borg.send_message(chat, zelzal, link_preview=False)
-                        done += 1
-                    except BaseException:
-                        er += 1
-                else:
-                    try: #Write Code By T.me/zzzzl1l
-                        await borg.send_file(
-                            chat,
-                            zelzal,
-                            caption=zelzal.caption,
-                            link_preview=False,
-                        )
-                        done += 1
-                    except BaseException:
-                        er += 1
-            except BaseException:
-                return
-    await zzz.edit(
-        f"**⎉╎تمت الاذاعـه بنجـاح الـى ** `{done}` **من المجموعـات ، خطـأ في الارسـال الـى ** `{er}` **من المجموعـات**"
-    )
-    
-@zedub.zed_cmd(pattern=f"للخاص(?: |$)(.*)")
+
+@zedub.zed_cmd(pattern="للخاص(?: |$)(.*)")
 async def gucast(event):
     zedthon = event.pattern_match.group(1)
-    if zedthon: #Write Code By T.me/zzzzl1l
+    if zedthon: 
         await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
         return
     elif event.is_reply:
@@ -147,54 +124,59 @@ async def gucast(event):
     else:
         await edit_or_reply(event, "**⎉╎بالـࢪد ؏ــلى ࢪسـالة او وسائـط**")
         return
+    
     zzz = await edit_or_reply(event, "**⎉╎جـاري الاذاعـه في الخـاص ...الرجـاء الانتظـار**")
     er = 0
     done = 0
+    
     async for x in event.client.iter_dialogs():
         if x.is_user and not x.entity.bot:
             chat = x.id
             try:
-                if zelzal.text: #Write Code By T.me/zzzzl1l
-                    try:
-                        await borg.send_message(chat, zelzal, link_preview=False)
-                        done += 1
-                    except BaseException:
-                        return
+                if zelzal.text and not zelzal.media:
+                    await event.client.send_message(chat, zelzal.text, link_preview=False)
+                    done += 1
                 else:
-                    try: #Write Code By T.me/zzzzl1l
-                        await borg.send_file(
-                            chat,
-                            zelzal,
-                            caption=zelzal.caption,
-                            link_preview=False,
-                        )
-                        done += 1
-                    except BaseException:
-                        er += 1
+                    await event.client.send_file(
+                        chat,
+                        zelzal.media,
+                        caption=zelzal.text or "",
+                        link_preview=False,
+                    )
+                    done += 1
             except BaseException:
-                return
+                er += 1
+                
     await zzz.edit(
         f"**⎉╎تمت الاذاعـه بنجـاح الـى ** `{done}` **من الخـاص**\n**⎉╎خطـأ في الارسـال الـى ** `{er}` **من الخـاص**"
     )
-    
+
 
 @zedub.zed_cmd(pattern="خاص ?(.*)")
 async def pmto(event):
     r = event.pattern_match.group(1)
+    if not r:
+        return await edit_or_reply(event, "**⎉╎يجب وضع المعرف او الايدي مع الرسالة**")
+        
     p = r.split(" ")
-    chat_id = p[0]
+    chat_dest = p[0]
+    
+    # محاولة تحويل الايدي لرقم لو كان رقمي
     try:
-        chat_id = int(chat_id)
-    except BaseException:
+        if chat_dest.isnumeric():
+            chat_dest = int(chat_dest)
+    except:
         pass
+        
     zelzal = ""
     for i in p[1:]:
         zelzal += i + " "
+        
     if zelzal == "":
-        return
+        return await edit_or_reply(event, "**⎉╎اكتب الرسالة يا وحش!**")
+        
     try:
-        await zedub.send_message(chat_id, zelzal)
+        await zedub.send_message(chat_dest, zelzal)
         await event.edit("**⎉╎تـم ارسال الرسـالة بنجـاح ✓**\n**⎉╎بـدون الدخـول للخـاص**")
-    except BaseException:
-        await event.edit("**⎉╎اووبس .. لقـد حدث خطـأ مـا .. اعـد المحـاوله**")
-
+    except Exception as e:
+        await event.edit(f"**⎉╎اووبس .. لقـد حدث خطـأ: {e}**")
