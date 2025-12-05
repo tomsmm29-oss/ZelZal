@@ -1,13 +1,26 @@
-# by: t.me/Dar4k  ~ t.me/R0R77
-# ported to ZThon
+# Zed-Thon - ZelZal (Hunter Fixed for ZTele 2025 by Mikey)
+# Async Logic + Internal UserAgent + CPU Safe Loops
+# Visuals Preserved 100%
+
 import random
-
+import asyncio
 import requests
-import telethon
-from telethon.sync import functions
-from user_agent import generate_user_agent
+from telethon import functions
+from telethon.errors import FloodWaitError, UsernameInvalidError
 
-from zthon import zedub
+# --- تصحيح المسارات والحقن النسبي ---
+from . import zedub
+from ..core.managers import edit_delete, edit_or_reply
+
+# --- دالة User-Agent محلية (بدل المكتبة الخارجية) ---
+def generate_user_agent():
+    versions = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1"
+    ]
+    return random.choice(versions)
 
 a = "qwertyuiopassdfghjklzxcvbnm"
 b = "1234567890"
@@ -27,15 +40,18 @@ def check_user(username):
         "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8,en;q=0.7",
     }
 
-    response = requests.get(url, headers=headers)
-    if (
-        response.text.find(
-            'If you have <strong>Telegram</strong>, you can contact <a class="tgme_username_link"'
-        )
-        >= 0
-    ):
-        return True
-    else:
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if (
+            response.text.find(
+                'If you have <strong>Telegram</strong>, you can contact <a class="tgme_username_link"'
+            )
+            >= 0
+        ):
+            return True
+        else:
+            return False
+    except:
         return False
 
 
@@ -97,7 +113,8 @@ def gen_user(choice):
         random.shuffle(f)
         username = "".join(f)
     else:
-        raise ValueError("Invalid choice for username generation.")
+        # قيمة افتراضية لتجنب الكراش
+        return "error"
     return username
 
 
@@ -144,15 +161,26 @@ async def hunterusername(event):
             event.chat_id, f"خطأ في انشاء القناة , الخطأ**-  : {str(e)}**"
         )
         sedmod = False
+        return
 
     isclaim.clear()
     isclaim.append("on")
     sedmod = True
+    
     while sedmod:
+        # إضافة Sleep ضروري جداً لعدم تجميد البوت
+        await asyncio.sleep(0.5)
+        
+        if "off" in isclaim:
+            break
+            
         username = gen_user(choice)
         if username == "error":
             await event.edit("**- يـرجى وضـع النـوع بشكـل صحيـح ...!!**")
+            isclaim.clear()
+            isclaim.append("off")
             break
+            
         isav = check_user(username)
         if isav == True:
             try:
@@ -173,17 +201,13 @@ async def hunterusername(event):
                         username, trys, choice
                     ),
                 )
-                await event.client.send_message(
-                    "@zzzzl1l", f"- Done : @{username} !\n- By : @ZedThon"
-                )
+                # تم إزالة إرسال الرسالة لمالك السورس الأصلي لتجنب المشاكل، أو يمكنك تركها
+                
                 sedmod = False
                 break
-            except telethon.errors.rpcerrorlist.UsernameInvalidError:
+            except UsernameInvalidError:
                 pass
-            except Exception as baned:
-                if "(caused by UpdateUsernameRequest)" in str(baned):
-                    pass
-            except telethon.errors.FloodError as e:
+            except FloodWaitError as e:
                 await zedub.send_message(
                     event.chat_id,
                     f"للاسف تبندت , مدة الباند**-  ({e.seconds}) ثانية .**",
@@ -193,7 +217,7 @@ async def hunterusername(event):
             except Exception as eee:
                 if "the username is already" in str(eee):
                     pass
-                if "USERNAME_PURCHASE_AVAILABLE" in str(eee):
+                elif "USERNAME_PURCHASE_AVAILABLE" in str(eee):
                     pass
                 else:
                     await zedub.send_message(
@@ -205,6 +229,7 @@ async def hunterusername(event):
         else:
             pass
         trys[0] += 1
+    
     isclaim.clear()
     isclaim.append("off")
 
@@ -230,12 +255,20 @@ async def _(event):
             await zedub.send_message(
                 event.chat_id, f"خطأ في انشاء القناة , الخطأ : {str(e)}"
             )
+            return
+
     isauto.clear()
     isauto.append("on")
     username = str(msg[1])
 
     swapmod = True
     while swapmod:
+        # إضافة Sleep ضروري
+        await asyncio.sleep(0.5)
+        
+        if "off" in isauto:
+            break
+
         isav = check_user(username)
         if isav == True:
             try:
@@ -256,19 +289,15 @@ async def _(event):
                         username, trys2
                     ),
                 )
-                await event.client.send_message(
-                    "@zzzzl1l",
-                    f"- Done : @{username} !\n- By : @ZedThon !\n- Hunting Log {trys2}",
-                )
                 swapmod = False
                 break
-            except telethon.errors.rpcerrorlist.UsernameInvalidError:
+            except UsernameInvalidError:
                 await event.client.send_message(
                     event.chat_id, f"**المعرف @{username} غير صالح ؟!**"
                 )
                 swapmod = False
                 break
-            except telethon.errors.FloodError as e:
+            except FloodWaitError as e:
                 await zedub.send_message(
                     event.chat_id, f"للاسف تبندت , مدة الباند ({e.seconds}) ثانية ."
                 )
@@ -285,8 +314,8 @@ async def _(event):
             pass
         trys2[0] += 1
 
-    isclaim.clear()
-    isclaim.append("off")
+    isauto.clear()
+    isauto.append("off")
 
 
 @zedub.zed_cmd(pattern="حالة الصيد")
